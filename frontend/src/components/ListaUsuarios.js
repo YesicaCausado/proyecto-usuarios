@@ -11,6 +11,20 @@ function UserList() {
         password: ''
     });
     const [mensaje, setMensaje] = useState('');
+    const [tipoMensaje, setTipoMensaje] = useState(''); // 'success' o 'error'
+
+    // Función para mostrar mensaje con timeout
+    const mostrarMensaje = (texto, tipo) => {
+        console.log('🔍 Mostrando mensaje:', texto, 'Tipo:', tipo);
+        setMensaje(texto);
+        setTipoMensaje(tipo);
+        
+        // Ocultar mensaje después de 5 segundos
+        setTimeout(() => {
+            setMensaje('');
+            setTipoMensaje('');
+        }, 5000);
+    };
 
     // Cargar usuarios al iniciar
     useEffect(() => {
@@ -23,7 +37,7 @@ function UserList() {
             .then(res => setUsers(res.data))
             .catch(err => {
                 console.error(err);
-                setMensaje('Error al cargar usuarios');
+                mostrarMensaje('Error al cargar usuarios', 'error');
             });
     };
 
@@ -39,13 +53,13 @@ function UserList() {
     const crearUsuario = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5001/api/usuarios', formData);
-            setMensaje('Usuario creado exitosamente');
+            const response = await axios.post('http://localhost:5001/api/usuarios', formData);
+            mostrarMensaje(response.data.message || 'Usuario creado exitosamente', 'success');
             setFormData({ nombre: '', email: '', password: '' });
             setShowForm(false);
             cargarUsuarios(); // Recargar la lista
         } catch (error) {
-            setMensaje(error.response?.data?.error || 'Error al crear usuario');
+            mostrarMensaje(error.response?.data?.error || 'Error al crear usuario', 'error');
         }
     };
 
@@ -58,14 +72,14 @@ function UserList() {
                 (formData.password ? formData : { nombre: formData.nombre, email: formData.email }) :
                 formData;
                 
-            await axios.put(`http://localhost:5001/api/usuarios/${editingUser.id}`, dataToSend);
-            setMensaje('Usuario actualizado exitosamente');
+            const response = await axios.put(`http://localhost:5001/api/usuarios/${editingUser.id}`, dataToSend);
+            mostrarMensaje(response.data.message || 'Usuario actualizado exitosamente', 'success');
             setFormData({ nombre: '', email: '', password: '' });
             setEditingUser(null);
             setShowForm(false);
             cargarUsuarios(); // Recargar la lista
         } catch (error) {
-            setMensaje(error.response?.data?.error || 'Error al actualizar usuario');
+            mostrarMensaje(error.response?.data?.error || 'Error al actualizar usuario', 'error');
         }
     };
 
@@ -73,11 +87,11 @@ function UserList() {
     const eliminarUsuario = async (id) => {
         if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
             try {
-                await axios.delete(`http://localhost:5001/api/usuarios/${id}`);
-                setMensaje('Usuario eliminado exitosamente');
+                const response = await axios.delete(`http://localhost:5001/api/usuarios/${id}`);
+                mostrarMensaje(response.data.message || 'Usuario eliminado exitosamente', 'success');
                 cargarUsuarios(); // Recargar la lista
             } catch (error) {
-                setMensaje(error.response?.data?.error || 'Error al eliminar usuario');
+                mostrarMensaje(error.response?.data?.error || 'Error al eliminar usuario', 'error');
             }
         }
     };
@@ -88,6 +102,7 @@ function UserList() {
         setEditingUser(null);
         setShowForm(true);
         setMensaje('');
+        setTipoMensaje('');
     };
 
     // Abrir formulario para editar
@@ -96,6 +111,7 @@ function UserList() {
         setEditingUser(usuario);
         setShowForm(true);
         setMensaje('');
+        setTipoMensaje('');
     };
 
     // Cancelar formulario
@@ -104,56 +120,37 @@ function UserList() {
         setEditingUser(null);
         setShowForm(false);
         setMensaje('');
+        setTipoMensaje('');
     };
 
     return (
-        <div style={{ padding: "20px" }}>
-            <h2>Gestión de Usuarios</h2>
+        <div className="usuarios-container">
+            <h2 className="usuarios-title">Gestión de Usuarios</h2>
             
             {/* Botón para crear nuevo usuario */}
-            <div style={{ marginBottom: '20px' }}>
-                <button 
-                    onClick={abrirFormularioCrear}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                    }}
-                >
+            <div className="action-section">
+                <button onClick={abrirFormularioCrear} className="btn-add">
                     + Agregar Usuario
                 </button>
             </div>
 
             {/* Mostrar mensajes */}
             {mensaje && (
-                <div style={{
-                    padding: '10px',
-                    marginBottom: '20px',
-                    backgroundColor: mensaje.includes('Error') ? '#f8d7da' : '#d4edda',
-                    color: mensaje.includes('Error') ? '#721c24' : '#155724',
-                    border: `1px solid ${mensaje.includes('Error') ? '#f5c6cb' : '#c3e6cb'}`,
-                    borderRadius: '4px'
-                }}>
-                    {mensaje}
+                <div className="message-container">
+                    <div className={`message ${tipoMensaje === 'error' ? 'message-error' : 'message-success'}`}>
+                        {console.log('🎨 Aplicando clase:', tipoMensaje === 'error' ? 'message-error' : 'message-success', 'para tipo:', tipoMensaje)}
+                        {mensaje}
+                    </div>
                 </div>
             )}
 
             {/* Formulario para crear/editar usuario */}
             {showForm && (
-                <div style={{
-                    backgroundColor: '#f8f9fa',
-                    padding: '20px',
-                    borderRadius: '4px',
-                    marginBottom: '20px',
-                    border: '1px solid #dee2e6'
-                }}>
-                    <h3>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
-                    <form onSubmit={editingUser ? actualizarUsuario : crearUsuario}>
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px' }}>
+                <div className="form-container">
+                    <h3 className="form-title">{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
+                    <form className="user-form" onSubmit={editingUser ? actualizarUsuario : crearUsuario}>
+                        <div className="form-group">
+                            <label className="form-label">
                                 Nombre:
                             </label>
                             <input
@@ -162,16 +159,11 @@ function UserList() {
                                 value={formData.nombre}
                                 onChange={handleChange}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '8px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '4px'
-                                }}
+                                className="form-input"
                             />
                         </div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px' }}>
+                        <div className="form-group">
+                            <label className="form-label">
                                 Email:
                             </label>
                             <input
@@ -180,16 +172,11 @@ function UserList() {
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '8px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '4px'
-                                }}
+                                className="form-input"
                             />
                         </div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px' }}>
+                        <div className="form-group">
+                            <label className="form-label">
                                 Contraseña{editingUser ? ' (dejar vacío para no cambiar)' : ''}:
                             </label>
                             <input
@@ -197,42 +184,15 @@ function UserList() {
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
-                                required={!editingUser} // Solo requerido al crear, opcional al editar
-                                style={{
-                                    width: '100%',
-                                    padding: '8px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '4px'
-                                }}
+                                required={!editingUser}
+                                className="form-input"
                             />
                         </div>
-                        <div>
-                            <button 
-                                type="submit"
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    marginRight: '10px'
-                                }}
-                            >
+                        <div className="form-buttons">
+                            <button type="submit" className="btn-submit">
                                 {editingUser ? 'Actualizar' : 'Crear'}
                             </button>
-                            <button 
-                                type="button"
-                                onClick={cancelarFormulario}
-                                style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#6c757d',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
-                                }}
-                            >
+                            <button type="button" onClick={cancelarFormulario} className="btn-cancel">
                                 Cancelar
                             </button>
                         </div>
@@ -241,54 +201,43 @@ function UserList() {
             )}
 
             {/* Tabla de usuarios */}
-            <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                    <tr style={{ backgroundColor: '#f8f9fa' }}>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.map(usuario => (
-                        <tr key={usuario.id}>
-                            <td>{usuario.id}</td>
-                            <td>{usuario.nombre}</td>
-                            <td>{usuario.email}</td>
-                            <td>
-                                <button 
-                                    onClick={() => abrirFormularioEditar(usuario)}
-                                    style={{
-                                        padding: '5px 10px',
-                                        backgroundColor: '#ffc107',
-                                        color: 'black',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        marginRight: '5px'
-                                    }}
-                                >
-                                    Editar
-                                </button>
-                                <button 
-                                    onClick={() => eliminarUsuario(usuario.id)}
-                                    style={{
-                                        padding: '5px 10px',
-                                        backgroundColor: '#dc3545',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Eliminar
-                                </button>
-                            </td>
+            <div className="users-table-container">
+                <table className="users-table">
+                    <thead className="table-header">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Acciones</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {users.map(usuario => (
+                            <tr key={usuario.id} className="table-row">
+                                <td className="table-cell">{usuario.id}</td>
+                                <td className="table-cell">{usuario.nombre}</td>
+                                <td className="table-cell">{usuario.email}</td>
+                                <td className="table-cell">
+                                    <div className="action-buttons">
+                                        <button 
+                                            onClick={() => abrirFormularioEditar(usuario)}
+                                            className="btn-edit"
+                                        >
+                                            Editar
+                                        </button>
+                                        <button 
+                                            onClick={() => eliminarUsuario(usuario.id)}
+                                            className="btn-delete"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

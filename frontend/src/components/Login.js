@@ -9,6 +9,20 @@ function Login({ onLogin }) {
         password: ''
     });
     const [mensaje, setMensaje] = useState('');
+    const [tipoMensaje, setTipoMensaje] = useState(''); // 'success' o 'error'
+
+    // Función para mostrar mensaje con timeout
+    const mostrarMensaje = (texto, tipo) => {
+        console.log('🔍 Login - Mostrando mensaje:', texto, 'Tipo:', tipo);
+        setMensaje(texto);
+        setTipoMensaje(tipo);
+        
+        // Ocultar mensaje después de 5 segundos
+        setTimeout(() => {
+            setMensaje('');
+            setTipoMensaje('');
+        }, 5000);
+    };
 
     const handleChange = (e) => {
         setFormData({
@@ -20,6 +34,7 @@ function Login({ onLogin }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMensaje('');
+        setTipoMensaje('');
 
         try {
             const url = isLogin ? 
@@ -30,16 +45,16 @@ function Login({ onLogin }) {
             
             if (isLogin) {
                 // Login exitoso
-                setMensaje('Login exitoso');
+                mostrarMensaje('Login exitoso', 'success');
                 onLogin(response.data.user);
             } else {
                 // Registro exitoso
-                setMensaje('Usuario registrado exitosamente');
+                mostrarMensaje(response.data.message || 'Usuario registrado exitosamente', 'success');
                 setIsLogin(true); // Cambiar a modo login
                 setFormData({ nombre: '', email: '', password: '' });
             }
         } catch (error) {
-            setMensaje(error.response?.data?.error || 'Error en el servidor');
+            mostrarMensaje(error.response?.data?.error || 'Error en el servidor', 'error');
         }
     };
 
@@ -47,32 +62,20 @@ function Login({ onLogin }) {
         setIsLogin(!isLogin);
         setFormData({ nombre: '', email: '', password: '' });
         setMensaje('');
+        setTipoMensaje('');
     };
 
     return (
-        <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            minHeight: '100vh',
-            backgroundColor: '#f5f5f5'
-        }}>
-            <div style={{
-                backgroundColor: 'white',
-                padding: '30px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                width: '100%',
-                maxWidth: '400px'
-            }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div className="login-container">
+            <div className="login-card">
+                <h2 className="login-title">
                     {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
                 </h2>
 
-                <form onSubmit={handleSubmit}>
+                <form className="login-form" onSubmit={handleSubmit}>
                     {!isLogin && (
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px' }}>
+                        <div className="form-group">
+                            <label className="form-label">
                                 Nombre:
                             </label>
                             <input
@@ -81,19 +84,13 @@ function Login({ onLogin }) {
                                 value={formData.nombre}
                                 onChange={handleChange}
                                 required={!isLogin}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '4px',
-                                    fontSize: '14px'
-                                }}
+                                className="form-input"
                             />
                         </div>
                     )}
 
-                    <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>
+                    <div className="form-group">
+                        <label className="form-label">
                             Email:
                         </label>
                         <input
@@ -102,18 +99,12 @@ function Login({ onLogin }) {
                             value={formData.email}
                             onChange={handleChange}
                             required
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: '1px solid #ddd',
-                                borderRadius: '4px',
-                                fontSize: '14px'
-                            }}
+                            className="form-input"
                         />
                     </div>
 
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>
+                    <div className="form-group">
+                        <label className="form-label">
                             Contraseña:
                         </label>
                         <input
@@ -122,44 +113,17 @@ function Login({ onLogin }) {
                             value={formData.password}
                             onChange={handleChange}
                             required
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: '1px solid #ddd',
-                                borderRadius: '4px',
-                                fontSize: '14px'
-                            }}
+                            className="form-input"
                         />
                     </div>
 
-                    <button
-                        type="submit"
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '16px',
-                            cursor: 'pointer'
-                        }}
-                    >
+                    <button type="submit" className="btn-primary">
                         {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
                     </button>
                 </form>
 
-                <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                    <button
-                        onClick={toggleMode}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#007bff',
-                            cursor: 'pointer',
-                            textDecoration: 'underline'
-                        }}
-                    >
+                <div className="toggle-container">
+                    <button onClick={toggleMode} className="btn-toggle">
                         {isLogin ? 
                             '¿No tienes cuenta? Regístrate' : 
                             '¿Ya tienes cuenta? Inicia sesión'
@@ -168,16 +132,11 @@ function Login({ onLogin }) {
                 </div>
 
                 {mensaje && (
-                    <div style={{
-                        marginTop: '15px',
-                        padding: '10px',
-                        backgroundColor: mensaje.includes('exitoso') ? '#d4edda' : '#f8d7da',
-                        color: mensaje.includes('exitoso') ? '#155724' : '#721c24',
-                        border: `1px solid ${mensaje.includes('exitoso') ? '#c3e6cb' : '#f5c6cb'}`,
-                        borderRadius: '4px',
-                        textAlign: 'center'
-                    }}>
-                        {mensaje}
+                    <div className="message-container">
+                        <div className={`message ${tipoMensaje === 'error' ? 'message-error' : 'message-success'}`}>
+                            {console.log('🎨 Login - Aplicando clase:', tipoMensaje === 'error' ? 'message-error' : 'message-success')}
+                            {mensaje}
+                        </div>
                     </div>
                 )}
             </div>

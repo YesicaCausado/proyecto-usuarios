@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import UserList from './components/ListaUsuarios';
 import Login from './components/Login';
+import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -14,29 +15,14 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="App">
       {user ? (
         <div>
-          <div style={{ 
-            padding: '10px', 
-            backgroundColor: '#f8f9fa', 
-            borderBottom: '1px solid #ddd',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <span>Bienvenido, {user.nombre}</span>
-            <button 
-              onClick={handleLogout}
-              style={{
-                padding: '5px 15px',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
+          <div className="user-header">
+            <div className="user-welcome">
+              Bienvenido, <span>{user.nombre}</span>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">
               Cerrar Sesión
             </button>
           </div>
