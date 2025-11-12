@@ -2,139 +2,115 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 
-// Obtener todos los usuarios
+// Listar todos los usuarios
 router.get('/', (req, res) => {
-    const query = 'SELECT * FROM usuarios ORDER BY id DESC';
-
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error al obtener usuarios:', err);
-            return res.status(500).json({
-                error: 'Error al obtener usuarios',
-                details: err.message
-            });
+    db.query('SELECT * FROM usuarios', (error, usuarios) => {
+        if (error) {
+            return res.status(500).json({ mensaje: 'Error al obtener usuarios' });
         }
-        res.json(results);
+        res.json(usuarios);
     });
 });
 
-// Crear nuevo usuario
+// Crear usuario
 router.post('/', (req, res) => {
-    console.log('📝 Creando usuario - Datos recibidos:', req.body);
     const { nombre, email, password } = req.body;
 
-    // Validación
     if (!nombre || !email || !password) {
-        return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
+        return res.status(400).json({ mensaje: 'Faltan datos' });
     }
 
     // Verificar si el email ya existe
-    const checkEmail = 'SELECT * FROM usuarios WHERE email = ?';
-    db.query(checkEmail, [email], (err, results) => {
-        if (err) {
-            console.error('Error al verificar email:', err);
-            return res.status(500).json({ error: 'Error en el servidor' });
+    db.query('SELECT * FROM usuarios WHERE email = ?', [email], (error, existe) => {
+        if (error) {
+            return res.status(500).json({ mensaje: 'Error al verificar email' });
         }
 
-        if (results.length > 0) {
-            return res.status(400).json({ error: 'El email ya está registrado' });
+        if (existe.length > 0) {
+            return res.status(400).json({ mensaje: 'El email ya existe' });
         }
 
-        // Insertar nuevo usuario
-        const insertQuery = 'INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)';
-        db.query(insertQuery, [nombre, email, password], (err, result) => {
-            if (err) {
-                console.error('Error al crear usuario:', err);
-                return res.status(500).json({ error: 'Error al crear usuario' });
-            }
-
-            console.log('✅ Usuario creado con ID:', result.insertId);
-            res.status(201).json({
-                message: 'Usuario creado exitosamente',
-                user: {
-                    id: result.insertId,
-                    nombre: nombre,
-                    email: email
-                    // No devolvemos la contraseña por seguridad
+        // Insertar usuario
+        db.query('INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)', 
+            [nombre, email, password], 
+            (error, resultado) => {
+                if (error) {
+                    return res.status(500).json({ mensaje: 'Error al crear usuario' });
                 }
-            });
-        });
+                res.status(201).json({ 
+                    mensaje: 'Usuario creado exitosamente',
+                    user: { id: resultado.insertId, nombre, email }
+                });
+            }
+        );
     });
 });
 
 // Actualizar usuario
 router.put('/:id', (req, res) => {
-    console.log('✏️ Actualizando usuario ID:', req.params.id, 'Datos:', req.body);
     const { id } = req.params;
     const { nombre, email, password } = req.body;
 
-    // Validación
     if (!nombre || !email) {
-        return res.status(400).json({ error: 'Nombre y email son requeridos' });
+        return res.status(400).json({ mensaje: 'Faltan datos' });
     }
 
-    // Verificar si el email ya existe en otro usuario
-    const checkEmail = 'SELECT * FROM usuarios WHERE email = ? AND id != ?';
-    db.query(checkEmail, [email, id], (err, results) => {
-        if (err) {
-            console.error('Error al verificar email:', err);
-            return res.status(500).json({ error: 'Error en el servidor' });
-        }
-
-        if (results.length > 0) {
-            return res.status(400).json({ error: 'El email ya está registrado por otro usuario' });
-        }
-
-        // Actualizar usuario (con o sin contraseña)
-        let updateQuery, queryParams;
-        if (password && password.trim() !== '') {
-            // Si se proporciona contraseña, actualizarla también
-            updateQuery = 'UPDATE usuarios SET nombre = ?, email = ?, password = ? WHERE id = ?';
-            queryParams = [nombre, email, password, id];
-        } else {
-            // Si no se proporciona contraseña, solo actualizar nombre y email
-            updateQuery = 'UPDATE usuarios SET nombre = ?, email = ? WHERE id = ?';
-            queryParams = [nombre, email, id];
-        }
-        
-        db.query(updateQuery, queryParams, (err, result) => {
-            if (err) {
-                console.error('Error al actualizar usuario:', err);
-                return res.status(500).json({ error: 'Error al actualizar usuario' });
+    // Si hay password, actualizar todo. Si no, solo nombre y email
+    if (password) {
+        db.query('UPDATE usuarios SET nombre = ?, email = ?, password = ? WHERE id = ?',
+            [nombre, email, password, id],
+            (error) => {
+                if (error) {
+                    return res.status(500).json({ mensaje: 'Error al actualizar' });
+                }
+                res.json({ mensaje: 'Usuario actualizado', user: { id, nombre, email } });
             }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'Usuario no encontrado' });
+        );
+    } else {
+        db.query('UPDATE usuarios SET nombre = ?, email = ? WHERE id = ?',
+            [nombre, email, id],
+            (error) => {
+                if (error) {
+                    return res.status(500).json({ mensaje: 'Error al actualizar' });
+                }
+                res.json({ mensaje: 'Usuario actualizado', user: { id, nombre, email } });
             }
-
-            console.log('✅ Usuario actualizado correctamente');
-            res.json({
-                message: 'Usuario actualizado exitosamente',
-                user: { id: parseInt(id), nombre, email }
-            });
-        });
-    });
+        );
+    }
 });
 
 // Eliminar usuario
 router.delete('/:id', (req, res) => {
-    console.log('🗑️ Eliminando usuario ID:', req.params.id);
     const { id } = req.params;
 
-    const deleteQuery = 'DELETE FROM usuarios WHERE id = ?';
-    db.query(deleteQuery, [id], (err, result) => {
-        if (err) {
-            console.error('Error al eliminar usuario:', err);
-            return res.status(500).json({ error: 'Error al eliminar usuario' });
+    db.query('DELETE FROM usuarios WHERE id = ?', [id], (error) => {
+        if (error) {
+            return res.status(500).json({ mensaje: 'Error al eliminar' });
         }
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-
-        console.log('✅ Usuario eliminado correctamente');
-        res.json({ message: 'Usuario eliminado exitosamente' });
+        res.json({ mensaje: 'Usuario eliminado' });
     });
+});
+
+// Login
+router.post('/login', (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ mensaje: 'Faltan datos' });
+    }
+
+    db.query('SELECT id, nombre, email FROM usuarios WHERE email = ? AND password = ?',
+        [email, password],
+        (error, resultado) => {
+            if (error) {
+                return res.status(500).json({ mensaje: 'Error en el servidor' });
+            }
+            if (resultado.length === 0) {
+                return res.status(401).json({ mensaje: 'Email o contraseña incorrectos' });
+            }
+            res.json({ mensaje: 'Login exitoso', user: resultado[0] });
+        }
+    );
 });
 
 module.exports = router;
